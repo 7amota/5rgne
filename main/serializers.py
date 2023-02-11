@@ -11,7 +11,7 @@ class SignUpSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["email", "username", "password"]
+        fields = ["email", "username", "password", "id"]
 
     def validate(self, attrs):
 
@@ -34,17 +34,35 @@ class SignUpSerializer(serializers.ModelSerializer):
 
         return user
 
-
-class CurrentUserPostsSerializer(serializers.ModelSerializer):
-    posts = serializers.HyperlinkedRelatedField(
-        many=True, view_name="post_detail", queryset=User.objects.all()
-    )
-
+class UserSerializer(serializers.ModelSerializer):
+    email = serializers.CharField(max_length=80)
+    username = serializers.CharField(max_length=45)
+    password = serializers.CharField(min_length=8, write_only=True)
+    image = serializers.ImageField()
     class Meta:
         model = User
-        fields = ["id", "username", "email", "posts"]
+        fields = ["email", "username", "password", 'id' , "image"]
+
+    def update(self, instance, validated_data,):
+       password = self.validated_data.pop("password")
+       images = validated_data.pop('image', None)
+     
+       if password is not None:
+           instance.set_password(password)
+
+       instance.save()
+       
+       return instance
+
+        
 
 class SliderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Slider
         fields = ["imageUrl"]
+
+class ImageSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField()
+    class Meta:
+        model = User
+        fields = ["image", "id"]
