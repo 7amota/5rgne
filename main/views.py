@@ -82,6 +82,7 @@ class UpdateUser(generics.RetrieveUpdateAPIView):
     serializer_class = UserSerializer
 
     def retrieve(self, request, *args, **kwargs):
+        TokenAuthentication.keyword = None
         serializer = self.serializer_class(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -136,12 +137,15 @@ class UserImage(viewsets.ModelViewSet):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     def create(self, request, *args, **kwargs):
-        serializer = self.serializer_class(request.user , data=request.FILES)
+        serializer = self.serializer_class(request.user , data=request.FILES,context={"request": 
+                      request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data , status.HTTP_200_OK)
     def list(self, request, *args, **kwargs):
-        serializer = self.serializer_class(request.user)
+        serializer = self.serializer_class(request.user
+        ,context={"request":request} 
+        )
         response = {
             "status" : 1,
             "data" : serializer.data
@@ -165,13 +169,16 @@ class UserImage(viewsets.ModelViewSet):
 class Profile(generics.RetrieveAPIView):
     # queryset = Token.objects.all()
     
-    serializer_class = UserSerializer
+    serializer_class = UserProfileSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     def get(self, request, *args, **kwargs):
         user = User.objects.get(email=request.user)
         token = Token.objects.get(user=user)
-        serializer = self.serializer_class(user)
+        serializer = self.serializer_class(user
+        ,context={"request": request}
+        
+        )
         return Response(
             {
                 "status":1,
@@ -180,6 +187,9 @@ class Profile(generics.RetrieveAPIView):
                 
             }
         )
+
+
+
 
 class Logout(generics.CreateAPIView):
     serializer_class = UserSerializer
@@ -192,3 +202,125 @@ class Logout(generics.CreateAPIView):
              "message":"user is gone ):"
          }
          return Response(response , status.HTTP_410_GONE)
+
+
+
+
+class GetItem(generics.ListAPIView):
+    queryset = Item.objects.all()
+    serializer_class = ItemSerializer
+    def get(self, request, *args, **kwargs):
+
+        item = Item.objects.all()
+        serializer = self.serializer_class(item , many=True, context={"request": request})
+        response = {
+            'items' : serializer.data,
+
+        }
+        return Response(response, status.HTTP_200_OK)
+
+
+
+
+class Addview(generics.CreateAPIView):
+    queryset = View.objects.all()
+    serializer_class = ViewsSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    def post(self, request, *args, **kwargs):
+       
+            item = Item.objects.get(pk=request.data["itemid"]) 
+            viewsl = request.data['view']
+            user = request.user
+            
+            view = View.objects.create(user=user , item=item , views=viewsl)
+            data = ViewsSerializer(view, many=False)
+            json = {
+                    'status': 1,
+                    'message':"created successfully",
+                    'data':data.data
+
+                }
+            return Response(json , status.HTTP_200_OK)
+
+
+
+
+class Addrate(generics.ListCreateAPIView):
+    queryset = Rate.objects.all()
+    serializer_class = RateSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    def post(self, request, *args, **kwargs):
+           item = Item.objects.get(id=request.data["itemid"])
+           stars = request.data['stars']
+           user = request.user
+           try:
+                print(request.user)
+
+                rate = Rate.objects.get(user=user.id , item=item.id)
+                rate.rate = stars
+                rate.save()
+                serializerupdate = RateSerializer(rate , many=False)
+                json = {
+                    'message' : 'updated',
+                    'data': serializerupdate.data
+                }
+                return Response(json, status.HTTP_200_OK)
+
+            
+           except:
+                print(request.user)
+                createrate = Rate.objects.create(
+                    item=item , user=user , rate=stars
+                )
+                serializer = RateSerializer(createrate, many=False)
+                jsonr = {
+                    'message' : 'created',
+                    'data' : serializer.data
+                }
+                return Response(jsonr, status=status.HTTP_200_OK)
+    def get(self, request, *args, **kwargs):
+        rat = Rate.objects.get(user=request.user , item = request.data["itemid"])
+        serializer = self.serializer_class(rat)
+        json = {
+            "status":1,
+            "data":serializer.data
+        }
+        return Response(json, status.HTTP_200_OK)
+
+
+
+
+class Fav(generics.ListCreateAPIView):
+    queryset = FavList.objects.all()
+    serializer_class = FavSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    def post(self, request, *args, **kwargs):
+        item = request.data["itemid"]
+        user = request.user
+        try:
+            get = self.queryset.get(item=item , user=user)
+            if get:
+                get.delete()
+            
+            j = {
+                "status":1,
+                "message":"item deleted successfully"
+            }
+            return Response(j, status.HTTP_200_OK)
+        except:
+            getitem = Item.objects.get(id=item)
+            create = self.queryset.create(user=user , item=getitem)
+            data = self.serializer_class(create)
+            
+            json = {
+                "status":1,
+                "message":"item created successfully",
+                "data":data.data,
+            }
+            return Response(json,status.HTTP_200_OK)
+
+         
+

@@ -12,4 +12,10 @@ path('update/', views.UpdateUser.as_view()),
 path('profile/', views.Profile.as_view()),
 path('logout/', views.Logout.as_view()),
 
+
+path('items/', views.GetItem.as_view()),
+path('views/', views.Addview.as_view()),
+path('rate/', views.Addrate.as_view()),
+path('fav/', views.Fav.as_view()),
+
 ]
