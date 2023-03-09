@@ -17,5 +17,15 @@ path('items/', views.GetItem.as_view()),
 path('views/', views.Addview.as_view()),
 path('rate/', views.Addrate.as_view()),
 path('fav/', views.Fav.as_view()),
+path('search/', views.SearchforItem.as_view()),
+path('recent/', views.MostRecent.as_view()),
+path('recommended/', views.RecommendedItems.as_view()),
+
+path('cities/', views.JSONFileView.as_view(), name='file_retrieve'),
+path('packages/', views.PackageView.as_view()),
+path('comments/<int:itemid>/', views.GetComments.as_view()),
+
+
+
 
 ]

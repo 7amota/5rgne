@@ -18,8 +18,14 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf.urls.static import static
 from django.conf import settings
+from django.core.asgi import get_asgi_application
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('main.urls')),
+
+
+    path('dj-rest-auth/', include('dj_rest_auth.urls')),
+    # path('dj-rest-auth/registration/', include('dj_rest_auth.registration.urls')),
 ]+ static(settings.MEDIA_URL , document_root = settings.MEDIA_ROOT)
 

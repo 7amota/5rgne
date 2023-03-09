@@ -2,7 +2,7 @@ from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 from rest_framework.validators import ValidationError
 from .models import *
-
+from collections import OrderedDict
 
 class SignUpSerializer(serializers.ModelSerializer):
     email = serializers.CharField(max_length=80)
@@ -72,13 +72,46 @@ class ImageSerializer(serializers.ModelSerializer):
 
 # prt2
 
+class ImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Images
+        fields = "__all__"
 
+    
 
+class CommentSerializer(serializers.ModelSerializer):
+    comment = serializers.SerializerMethodField()
+    user = serializers.SerializerMethodField()
+    class Meta:
+        model = Rate
+        fields= ["comment", "user", "rate"]
+    def get_user(self,obj):
+        return obj.user.username 
+    def get_comment(self,obj):
+        if obj.comment != None:
+            return obj.comment
+        else:
+            return None
+    def to_representation(self, instance):
+        result = super(CommentSerializer, self).to_representation(instance)
+        return OrderedDict([(key, result[key]) for key in result if result[key] is not None])
+    
 
 class ItemSerializer(serializers.ModelSerializer):
+    images = ImageSerializer(many=True)
+    avg_of_rating = serializers.FloatField()
+    is_recommended = serializers.BooleanField()
+    comments = CommentSerializer(many=True)
+    comments_count= serializers.SerializerMethodField()
     class Meta:
         model = Item
-        fields = ["id","title", "description", "location", "TicketPriceForEgyptions", "TicketPriceForForeing", "TicketPriceForStudents", "videolink", "image1","image2" , "image3","nomber_of_ratings" ,"avg_of_rating", "views",]
+        fields = ["id","title", "description", "images", "is_recommended", "location","TicketPriceForEgyptions", "TicketPriceForForeing", "TicketPriceForStudents", "videolink","nomber_of_ratings" , "workinghours_from", "workinghours_to","avg_of_rating", "views", "loves", "comments", "comments_count"]
+    def get_comments_count(self, obj):
+        return len(obj.comments.all())
+    def to_representation(self, instance):
+        result = super(ItemSerializer, self).to_representation(instance)
+        return OrderedDict([(key, result[key]) for key in result if result[key] is not None])
+
 
 
 
@@ -89,11 +122,27 @@ class ViewsSerializer(serializers.ModelSerializer):
         fields = ["id", "user","item","views"]
 
 class RateSerializer(serializers.ModelSerializer):
+    comment = serializers.SerializerMethodField()
     class Meta:
         model = Rate
-        fields = ["id", "user","item" , 'rate']
+        fields = ["id", "user","item" , 'rate', "comment"]
+
+
+
 
 class FavSerializer(serializers.ModelSerializer):
+    item = ItemSerializer()
     class Meta:
         model = FavList
-        fields = ['id' , 'user' , 'item']
+        fields = ['item']
+
+class TripSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Trip
+        fields = '__all__'
+
+class PackageSerializer(serializers.ModelSerializer):
+    trip = TripSerializer(many=True)
+    class Meta:
+        model = Package
+        fields = ['title','duration','hotel_name','hote_location',"trip"]
